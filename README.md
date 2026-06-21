@@ -155,6 +155,9 @@ last byte   XOR checksum of every previous byte
 
 The maximum payload is 192 bytes, enough for a full 64 pixel RGB frame.
 
+For complete client implementation details, response handling, reconnect
+strategy, and Python/Node examples, see [CLIENT_PROTOCOL.md](CLIENT_PROTOCOL.md).
+
 ### Commands
 
 | Command | Name | Payload | Meaning |
