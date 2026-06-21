@@ -1,0 +1,10 @@
+BasedOnStyle: Google
+Language: Cpp
+ColumnLimit: 100
+IndentWidth: 2
+PointerAlignment: Left
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+BreakBeforeBraces: Attach
+SortIncludes: false
