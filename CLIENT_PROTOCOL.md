@@ -219,6 +219,10 @@ y: 0..7
 Coordinates are logical matrix coordinates. The firmware maps them to the
 physical serpentine LED order.
 
+Client note: `tools/matrix_client.py` exposes display-space coordinates for
+drawn content. On the soldered panel, rows 2, 4, 6, and 8 are visibly mirrored
+unless the client pre-flips those rows before calling this command.
+
 Logical layout:
 
 ```text
@@ -239,7 +243,12 @@ pixel0_r pixel0_g pixel0_b pixel1_r pixel1_g pixel1_b ... pixel63_r pixel63_g pi
 ```
 
 Important: this command uses physical LED chain order, not logical x/y row
-order.
+order. For the current horizontal zigzag matrix, row `0` is left-to-right, row
+`1` is right-to-left, and rows continue alternating.
+
+Client note: generated full-frame helpers in `tools/matrix_client.py` pack from
+display-space coordinates and apply the same alternating-row compensation before
+sending the 192-byte payload.
 
 This is the most efficient command for animations because one TCP command
 updates the whole matrix.
