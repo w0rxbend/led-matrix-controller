@@ -1,45 +1,68 @@
-# ESP8266 LED Matrix Controller
+<p align="center">
+  <img src="docs/logo.svg" alt="ESP8266 LED Matrix Controller" width="100%">
+</p>
 
-Wi-Fi TCP firmware for an ESP8266 NodeMCU driving a WS2812B 8x8 LED matrix.
+<h1 align="center">ESP8266 LED Matrix Controller</h1>
 
-The controller boots safely, joins Wi-Fi or opens its own access point, prints
-its IP address, and accepts compact binary TCP packets for real-time LED control.
+<p align="center">
+  <strong>Wi-Fi TCP firmware for an ESP8266 NodeMCU driving a WS2812B 8x8 LED matrix.</strong>
+</p>
 
-```text
-client app  ->  TCP packet  ->  ESP8266  ->  WS2812B 8x8 matrix
-```
+<p align="center">
+  <img alt="PlatformIO" src="https://img.shields.io/badge/PlatformIO-ready-f5822a?style=for-the-badge&logo=platformio&logoColor=white">
+  <img alt="Arduino" src="https://img.shields.io/badge/Arduino-framework-00979d?style=for-the-badge&logo=arduino&logoColor=white">
+  <img alt="ESP8266" src="https://img.shields.io/badge/ESP8266-NodeMCU-2f80ed?style=for-the-badge">
+  <img alt="Protocol" src="https://img.shields.io/badge/TCP-port%207777-35c759?style=for-the-badge">
+</p>
 
-## Features
+<p align="center">
+  <code>client app</code> -> <code>binary TCP packet</code> -> <code>ESP8266</code> -> <code>WS2812B matrix</code>
+</p>
 
-- ESP8266 NodeMCU v2 target with Arduino + PlatformIO.
-- WS2812B / NeoPixel matrix output on `D2 / GPIO4`.
-- Resilient TCP server on port `7777`.
-- Station mode with local `include/creds.h`.
-- Access point fallback when Wi-Fi credentials are missing.
-- Startup delay to reduce brownout and boot instability.
-- Reconnect loop for Wi-Fi drops.
-- TCP listener restart after reconnect or listener failure.
-- Compact binary protocol for low-overhead matrix updates.
-- Commands for ping, clear, brightness, fill, pixel, full frame, and panel on/off.
-- Stored frame buffer: panel off blanks LEDs without forgetting the image.
+---
 
-## Hardware
+## ✨ What It Does
 
-Required:
+This firmware turns a small ESP8266 board into a network-controlled LED matrix
+driver. It boots safely, joins Wi-Fi or opens its own fallback access point,
+prints its IP address, and accepts compact binary TCP commands for real-time LED
+control.
 
-- ESP8266 NodeMCU v2.
-- WS2812B 8x8 matrix, 64 LEDs.
-- External regulated 5V power supply.
-- Common ground between ESP8266 and LED power supply.
+### Highlights
 
-Recommended:
+- 📡 **Resilient TCP server** on port `7777`
+- 🌐 **Station mode** via local `include/creds.h`
+- 🛜 **Access point fallback** when credentials are missing
+- 💡 **WS2812B / NeoPixel output** on `D2 / GPIO4`
+- 🎚️ **Brightness control**
+- 🎨 **Fill, pixel, and full-frame color commands**
+- 🌙 **Panel off/on** without forgetting the current image
+- 🔁 **Wi-Fi reconnect and TCP listener restart**
+- 🧰 **PlatformIO build, upload, monitor, and static check workflow**
 
-- 330-470 ohm resistor in series with data near matrix `DIN`.
-- 1000 uF capacitor across matrix `5V` and `GND`.
-- Short data wire.
-- Conservative brightness until the power supply is proven stable.
+---
 
-## Wiring
+## 🧩 Hardware
+
+### Required
+
+| Part | Notes |
+|---|---|
+| ESP8266 NodeMCU v2 | PlatformIO board: `nodemcuv2` |
+| WS2812B 8x8 matrix | 64 addressable RGB LEDs |
+| External 5V PSU | Use enough current for your brightness target |
+| Common ground | Required between ESP8266 and LED PSU |
+
+### Recommended
+
+- 🛡️ `330-470 ohm` resistor in series with data near matrix `DIN`
+- 🔋 `1000 uF` capacitor across matrix `5V` and `GND`
+- 📏 Short data wire
+- 🎚️ Conservative brightness while testing power stability
+
+---
+
+## 🔌 Wiring
 
 ```text
 ESP8266 D2 / GPIO4  ->  WS2812B DIN
@@ -48,12 +71,18 @@ PSU 5V              ->  WS2812B 5V
 PSU GND             ->  WS2812B GND
 ```
 
-The shared ground is mandatory. Without it, the data signal has no stable
-reference and the matrix can flicker, show wrong colors, or partially work.
+> [!IMPORTANT]
+> The shared ground is mandatory. Without it, the matrix has no stable reference
+> for the ESP8266 data signal and can flicker, show wrong colors, or partially
+> work.
 
-Do not power a full 64 LED matrix at high brightness from the ESP8266 5V pin.
+> [!CAUTION]
+> Do not power a full 64 LED matrix at high brightness from the ESP8266 5V pin.
+> Use an external regulated 5V supply.
 
-## Project Layout
+---
+
+## 🗂️ Project Layout
 
 ```text
 include/
@@ -68,21 +97,25 @@ src/
   MatrixProtocol.cpp       checksum helper
   TcpMatrixServer.cpp      Wi-Fi retry, TCP server, packet handling
 
+docs/
+  logo.svg                 README banner
+
+CLIENT_PROTOCOL.md         full client implementation guide
+PLAN.md                    improvement/refactoring roadmap
 platformio.ini             PlatformIO environment and cppcheck config
-PLAN.md                    active improvement/refactoring roadmap
 ```
 
-## Setup
+---
 
-Install PlatformIO, then install dependencies through the normal build:
+## 🚀 Quick Start
+
+### 1. Build
 
 ```bash
 pio run
 ```
 
-### Wi-Fi Credentials
-
-Create a local credentials file:
+### 2. Add Wi-Fi Credentials
 
 ```bash
 cp include/creds.example.h include/creds.h
@@ -99,30 +132,13 @@ Edit `include/creds.h`:
 
 `include/creds.h` is ignored by git.
 
-If `WIFI_SSID` is empty or `include/creds.h` is missing, the device starts an
-open access point:
-
-```text
-SSID: led-matrix
-IP:   192.168.4.1
-TCP:  7777
-```
-
-## Build And Upload
-
-Build:
-
-```bash
-pio run
-```
-
-Upload:
+### 3. Upload
 
 ```bash
 pio run --target upload
 ```
 
-Open serial monitor:
+### 4. Open Serial Monitor
 
 ```bash
 pio device monitor
@@ -139,9 +155,31 @@ Device IP: <ip-address>
 TCP port: 7777
 ```
 
-## TCP Protocol
+---
 
-Every command is one binary frame:
+## 🛜 Wi-Fi Modes
+
+### Station Mode
+
+If `include/creds.h` contains a non-empty `WIFI_SSID`, the controller joins that
+network and prints its assigned IP.
+
+### Fallback Access Point
+
+If credentials are missing or `WIFI_SSID` is empty, the controller starts an
+open access point:
+
+```text
+SSID: led-matrix
+IP:   192.168.4.1
+TCP:  7777
+```
+
+---
+
+## 📦 TCP Protocol
+
+Every command is a compact binary frame:
 
 ```text
 byte 0      0x4C, 'L'
@@ -153,12 +191,11 @@ bytes 5..N  payload
 last byte   XOR checksum of every previous byte
 ```
 
-The maximum payload is 192 bytes, enough for a full 64 pixel RGB frame.
-
 For complete client implementation details, response handling, reconnect
-strategy, and Python/Node examples, see [CLIENT_PROTOCOL.md](CLIENT_PROTOCOL.md).
+strategy, animation pacing, and Python/Node examples, see
+[CLIENT_PROTOCOL.md](CLIENT_PROTOCOL.md).
 
-### Commands
+### Command Map
 
 | Command | Name | Payload | Meaning |
 |---:|---|---|---|
@@ -170,32 +207,11 @@ strategy, and Python/Node examples, see [CLIENT_PROTOCOL.md](CLIENT_PROTOCOL.md)
 | `0x05` | set frame | 192 RGB bytes | Replace full physical LED frame |
 | `0x06` | panel enabled | `enabled` | `0` off, nonzero on |
 
-Response frame:
-
-```text
-0x4C 0x4D 0x01 0x80 status checksum
-```
-
-Status values:
-
-| Status | Meaning |
-|---:|---|
-| `0x00` | OK |
-| `0x01` | Bad magic |
-| `0x02` | Unsupported version |
-| `0x03` | Unknown command |
-| `0x04` | Invalid payload length or coordinate |
-| `0x05` | Checksum mismatch |
-
-## Packet Example
-
-Fill the panel red:
+### Example: Fill Red
 
 ```text
 4C 4D 01 03 03 FF 00 00 E3
 ```
-
-Explanation:
 
 ```text
 4C 4D       magic "LM"
@@ -206,21 +222,23 @@ FF 00 00    RGB red
 E3          XOR checksum
 ```
 
-## Development
+---
 
-Format:
+## 🧪 Development
+
+### Format
 
 ```bash
 clang-format -i include/*.h src/*.cpp
 ```
 
-Static check:
+### Static Check
 
 ```bash
 pio check
 ```
 
-Full local verification:
+### Full Local Verification
 
 ```bash
 clang-format -i include/*.h src/*.cpp
@@ -228,34 +246,44 @@ pio run
 pio check
 ```
 
-## Troubleshooting
+---
 
-Matrix flickers or only some LEDs work:
+## 🛠️ Troubleshooting
 
-- Confirm ESP8266 `GND` and LED PSU `GND` are connected.
-- Confirm data wire goes to matrix `DIN`, not `DOUT`.
-- Lower brightness.
-- Use a stronger 5V supply.
-- Add the data resistor and power capacitor.
+### Matrix flickers or only some LEDs work
 
-No serial output:
+- ✅ Confirm ESP8266 `GND` and LED PSU `GND` are connected.
+- ✅ Confirm data wire goes to matrix `DIN`, not `DOUT`.
+- ✅ Lower brightness.
+- ✅ Use a stronger 5V supply.
+- ✅ Add the data resistor and power capacitor.
+
+### No serial output
 
 - Monitor speed is `115200`.
 - ESP8266 ROM boot text may appear garbled before firmware starts.
 
-Cannot connect over TCP:
+### Cannot connect over TCP
 
-- Check the serial monitor for `Device IP`.
-- Confirm your computer is on the same Wi-Fi network or connected to the
-  `led-matrix` access point.
+- Check serial monitor for `Device IP`.
+- Confirm your computer is on the same Wi-Fi network or connected to
+  `led-matrix`.
 - Use TCP port `7777`.
 
-Wrong colors:
+### Wrong colors
 
 - The firmware assumes `NEO_GRB`.
 - If red/green are swapped, update the NeoPixel color order in
   `LedMatrixController.cpp`.
 
-## Roadmap
+---
+
+## 🗺️ Roadmap
 
 See [PLAN.md](PLAN.md) for the active refactoring and improvement roadmap.
+
+---
+
+<p align="center">
+  <strong>Built for small hardware, direct control, and predictable LED behavior.</strong>
+</p>
