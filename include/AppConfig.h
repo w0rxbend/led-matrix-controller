@@ -42,5 +42,8 @@ constexpr char kAccessPointSsid[] = "led-matrix";
 constexpr uint32_t kStationConnectTimeoutMs = 15000;
 constexpr uint32_t kWifiRetryIntervalMs = 10000;
 constexpr uint32_t kServerHealthCheckIntervalMs = 5000;
+constexpr uint8_t kMaxCustomFrames = 8;
+constexpr uint16_t kDefaultPresetIntervalMs = 140;
+constexpr uint16_t kMinEffectFrameDelayMs = 20;
 
 }  // namespace AppConfig

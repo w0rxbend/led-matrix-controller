@@ -70,7 +70,7 @@ byte 0      magic 0x4C ('L')
 byte 1      magic 0x4D ('M')
 byte 2      version 0x01
 byte 3      command
-byte 4      payload length, 0..192
+byte 4      payload length, 0..255
 bytes 5..N  payload
 last byte   checksum
 ```
@@ -81,7 +81,7 @@ The checksum is XOR of every previous byte in the frame:
 checksum = byte0 ^ byte1 ^ byte2 ^ ... ^ lastPayloadByte
 ```
 
-The maximum payload length is `192` because a full frame is:
+The maximum payload length is `255`. A full frame is still:
 
 ```text
 64 pixels * 3 RGB bytes = 192 bytes
@@ -267,6 +267,82 @@ Panel off writes black to the LEDs but keeps the stored frame in RAM. Panel on
 restores that stored frame.
 
 Use this for temporary blanking. Use `clear` when you want to erase the frame.
+
+### `0x07`: Set Static Color
+
+Starts a fixed-color static mode.
+
+Payload length: `3`
+
+Payload:
+
+```text
+r g b
+```
+
+The matrix keeps this color until another mode change or direct command occurs.
+
+### `0x08`: Set Preset Effect
+
+Starts one preset effect.
+
+Payload length: `6`
+
+Payload:
+
+```text
+effect_id interval_lsb interval_msb r g b
+```
+
+`effect_id` values:
+
+- `1` chase
+- `2` color_wipe
+- `3` blink
+- `4` wave
+- `5` rain
+- `6` meteor
+- `7` rainbow
+- `8` breathing
+- `9` scanner
+- `10` sparkle
+- `11` fire
+- `12` matrix_rain
+- `13` ripple
+- `14` theater_chase
+- `15` twinkle
+- `16` comet
+- `17` plasma
+- `18` diagonal
+- `19` border_chase
+- `20` heartbeat
+- `21` pulse_wipe
+- `22` confetti
+- `0` stop effect and return to direct mode
+
+The interval controls frame timing in milliseconds. `0` is treated as `140ms`.
+
+### `0x09`: Upload Custom Frame
+
+Uploads one frame to the custom animation slot.
+
+Payload length: `196`
+
+Payload:
+
+```text
+frame_index frame_count delay_lsb delay_msb pixel0_r ... pixel63_b
+```
+
+Frame data is in physical LED order (same format as `0x05`).
+Send all frames with the same `frame_count` (from index `0` to `frame_count-1`).
+The device starts looping as soon as all frames are uploaded.
+
+### `0x0A`: Stop Effect
+
+Stops running preset/custom animation and returns to direct mode.
+
+Payload length: `0`
 
 ## Building Frames
 

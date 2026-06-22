@@ -7,6 +7,42 @@
 LedMatrixController ledMatrix;
 TcpMatrixServer tcpServer(ledMatrix);
 
+namespace {
+
+void runStartupAnimation() {
+  // Give a short visual indicator that firmware boot finished and matrix control is
+  // live. The animation is intentionally simple and bounded to avoid long startup
+  // delays.
+  Serial.println("Startup animation: running");
+
+  ledMatrix.clear();
+  delay(100);
+
+  // Pixel sweep: one bright white pixel moves across the panel a few times.
+  constexpr uint8_t sweepRepeats = 2;
+  constexpr uint16_t sweepDelayMs = 35;
+
+  for (uint8_t repeat = 0; repeat < sweepRepeats; ++repeat) {
+    for (uint8_t logicalIndex = 0; logicalIndex < AppConfig::kLedCount; ++logicalIndex) {
+      const uint8_t x = logicalIndex % AppConfig::kMatrixWidth;
+      const uint8_t y = logicalIndex / AppConfig::kMatrixWidth;
+
+      ledMatrix.clear();
+      ledMatrix.setPixel(x, y, 255, 255, 255);
+      delay(sweepDelayMs);
+    }
+  }
+
+  // Confirm success state with a short green flash, then leave the panel on so the
+  // user can immediately see it is ready.
+  ledMatrix.fill(0, 255, 0);
+  delay(180);
+  ledMatrix.clear();
+  delay(80);
+}
+
+}  // namespace
+
 void setup() {
   // Serial is only for diagnostics. The controller protocol itself is TCP.
   Serial.begin(115200);
@@ -25,6 +61,7 @@ void setup() {
   // Initialize hardware first, then networking. If Wi-Fi takes time to connect,
   // the LED matrix is already in a known cleared state.
   ledMatrix.begin();
+  runStartupAnimation();
   tcpServer.begin();
 }
 

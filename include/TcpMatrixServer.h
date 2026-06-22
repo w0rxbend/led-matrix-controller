@@ -23,6 +23,34 @@ class TcpMatrixServer {
   void loop();
 
  private:
+  enum class EffectMode : uint8_t {
+    kDirect = 0,
+    kStatic,
+    kChase,
+    kColorWipe,
+    kBlink,
+    kWave,
+    kRain,
+    kMeteor,
+    kRainbow,
+    kBreathing,
+    kScanner,
+    kSparkle,
+    kFire,
+    kMatrixRain,
+    kRipple,
+    kTheaterChase,
+    kTwinkle,
+    kComet,
+    kPlasma,
+    kDiagonal,
+    kBorderChase,
+    kHeartbeat,
+    kPulseWipe,
+    kConfetti,
+    kCustom
+  };
+
   // Network startup and retry helpers.
   void startWifi();
   void beginStationConnect();
@@ -54,6 +82,38 @@ class TcpMatrixServer {
   // Sends the compact 6-byte response frame back to the current TCP client.
   void sendStatus(MatrixProtocol::Status status);
 
+  // Animation engine.
+  void updateAnimations();
+  void stopEffects();
+  void startEffect(EffectMode mode, uint16_t intervalMs, uint8_t red, uint8_t green, uint8_t blue);
+  bool applyCustomFrame(uint8_t frameIndex, uint8_t frameCount, uint16_t delayMs,
+                       const uint8_t* frameData);
+  void renderEffectFrame(uint32_t nowMs);
+  void renderStatic(uint32_t nowMs);
+  void renderChase(uint32_t nowMs);
+  void renderColorWipe(uint32_t nowMs);
+  void renderBlink(uint32_t nowMs);
+  void renderWave(uint32_t nowMs);
+  void renderRain(uint32_t nowMs);
+  void renderMeteor(uint32_t nowMs);
+  void renderRainbow(uint32_t nowMs);
+  void renderBreathing(uint32_t nowMs);
+  void renderScanner(uint32_t nowMs);
+  void renderSparkle(uint32_t nowMs);
+  void renderFire(uint32_t nowMs);
+  void renderMatrixRain(uint32_t nowMs);
+  void renderRipple(uint32_t nowMs);
+  void renderTheaterChase(uint32_t nowMs);
+  void renderTwinkle(uint32_t nowMs);
+  void renderComet(uint32_t nowMs);
+  void renderPlasma(uint32_t nowMs);
+  void renderDiagonal(uint32_t nowMs);
+  void renderBorderChase(uint32_t nowMs);
+  void renderHeartbeat(uint32_t nowMs);
+  void renderPulseWipe(uint32_t nowMs);
+  void renderConfetti(uint32_t nowMs);
+  void renderCustom(uint32_t nowMs);
+
   // Matrix is injected so network code does not own LED hardware directly.
   LedMatrixController& matrix_;
 
@@ -72,4 +132,23 @@ class TcpMatrixServer {
   bool serverStarted_;
   uint32_t lastWifiRetryMs_;
   uint32_t lastServerHealthCheckMs_;
+
+  // Non-blocking animation state.
+  EffectMode effectMode_;
+  uint16_t effectIntervalMs_;
+  uint32_t lastEffectStepMs_;
+  uint8_t effectPhase_;
+  uint8_t effectColorRed_;
+  uint8_t effectColorGreen_;
+  uint8_t effectColorBlue_;
+  bool effectBlinkState_;
+  uint32_t effectSeed_;
+
+  // Custom animation state: one slot with multiple frames.
+  uint8_t customFrameCount_;
+  uint8_t customFrameExpectedCount_;
+  uint16_t customFrameDelayMs_[AppConfig::kMaxCustomFrames];
+  uint8_t customReceivedMask_;
+  uint8_t customCurrentFrame_;
+  uint8_t customFrameBuffer_[AppConfig::kMaxCustomFrames][AppConfig::kLedCount * 3];
 };

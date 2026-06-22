@@ -10,14 +10,13 @@ namespace MatrixProtocol {
 //
 //   'L' 'M' version command payloadLength payload checksum
 //
-// A fixed header and a 1-byte payload length are enough for this 8x8 matrix
-// because a complete frame is only 64 * 3 = 192 bytes. Keeping the protocol
-// binary avoids text parsing overhead on the ESP8266.
+// A fixed header and a 1-byte payload length keep the protocol tiny.
+// Some commands need metadata, so the maximum payload is now 255 bytes.
 constexpr uint8_t kMagic0 = 0x4C;
 constexpr uint8_t kMagic1 = 0x4D;
 constexpr uint8_t kVersion = 0x01;
 constexpr uint8_t kResponseCommand = 0x80;
-constexpr uint16_t kMaxPayloadSize = AppConfig::kLedCount * 3;
+constexpr uint16_t kMaxPayloadSize = 255;
 constexpr uint16_t kHeaderSize = 5;
 constexpr uint16_t kChecksumSize = 1;
 constexpr uint16_t kMaxFrameSize = kHeaderSize + kMaxPayloadSize + kChecksumSize;
@@ -44,6 +43,18 @@ enum class Command : uint8_t {
 
   // Turns visible panel output off/on without clearing the stored image.
   kSetPanelEnabled = 0x06,
+
+  // Sets a single static color and keeps matrix in static mode.
+  kSetStaticColor = 0x07,
+
+  // Applies one preset effect.
+  kSetPresetEffect = 0x08,
+
+  // Uploads one frame for the single custom animation slot.
+  kUploadCustomFrame = 0x09,
+
+  // Stops any running effect and returns control to direct commands.
+  kStopEffect = 0x0A,
 };
 
 enum class Status : uint8_t {
