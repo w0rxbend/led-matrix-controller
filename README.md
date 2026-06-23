@@ -48,7 +48,7 @@ control.
 
 | Part | Notes |
 |---|---|
-| ESP8266 NodeMCU v2 | PlatformIO board: `nodemcuv2` |
+| ESP8266 NodeMCU v3 | PlatformIO environment: `nodemcuv3` |
 | WS2812B 8x8 matrix | 64 addressable RGB LEDs |
 | External 5V PSU | Use enough current for your brightness target |
 | Common ground | Required between ESP8266 and LED PSU |
@@ -114,6 +114,9 @@ platformio.ini             PlatformIO environment and cppcheck config
 ```bash
 pio run
 ```
+
+\* `nodemcuv3` is intentionally mapped to the `nodemcuv2` board definition
+because PlatformIO currently ships ESP-12E/NodeMCU as `nodemcuv2`.
 
 ### 2. Add Wi-Fi Credentials
 
