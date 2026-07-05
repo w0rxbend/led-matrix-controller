@@ -27,6 +27,9 @@ constexpr uint8_t kLedPin = D2;
 constexpr uint8_t kMatrixWidth = 8;
 constexpr uint8_t kMatrixHeight = 8;
 constexpr uint16_t kLedCount = kMatrixWidth * kMatrixHeight;
+// Physical matrix rotation in degrees required by board orientation:
+// -90 rotates clockwise, 90 rotates counter-clockwise, 180 inverts both axes.
+constexpr int8_t kMatrixRotationDegrees = -90;
 
 // Full white on 64 WS2812B LEDs can pull too much current for small supplies,
 // so the default is deliberately conservative.
