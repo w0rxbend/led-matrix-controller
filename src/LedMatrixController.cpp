@@ -1,5 +1,36 @@
 #include "LedMatrixController.h"
 
+namespace {
+
+void rotateMatrixCoordinate(uint8_t x, uint8_t y, uint8_t& rotatedX, uint8_t& rotatedY) {
+  uint8_t normalizedX = x;
+  uint8_t normalizedY = y;
+
+  // Apply logical layout compensation for physical board orientation.
+  switch (AppConfig::kMatrixRotationDegrees) {
+    case -90:
+      normalizedX = y;
+      normalizedY = static_cast<uint8_t>(AppConfig::kMatrixHeight - 1 - x);
+      break;
+    case 90:
+      normalizedX = static_cast<uint8_t>(AppConfig::kMatrixWidth - 1 - y);
+      normalizedY = x;
+      break;
+    case 180:
+      normalizedX = static_cast<uint8_t>(AppConfig::kMatrixWidth - 1 - x);
+      normalizedY = static_cast<uint8_t>(AppConfig::kMatrixHeight - 1 - y);
+      break;
+    case 0:
+    default:
+      break;
+  }
+
+  rotatedX = normalizedX;
+  rotatedY = normalizedY;
+}
+
+}  // namespace
+
 LedMatrixController::LedMatrixController()
     : pixels_(AppConfig::kLedCount, AppConfig::kLedPin, NEO_GRB + NEO_KHZ800),
       frameRgb_(),
@@ -98,8 +129,16 @@ void LedMatrixController::render() {
 }
 
 uint16_t LedMatrixController::toPhysicalIndex(uint8_t x, uint8_t y) const {
+  uint8_t logicalX = x;
+  uint8_t logicalY = y;
+
   // Returning an out-of-range index lets callers use one simple validity check.
-  if (x >= AppConfig::kMatrixWidth || y >= AppConfig::kMatrixHeight) {
+  if (logicalX >= AppConfig::kMatrixWidth || logicalY >= AppConfig::kMatrixHeight) {
+    return AppConfig::kLedCount;
+  }
+
+  rotateMatrixCoordinate(x, y, logicalX, logicalY);
+  if (logicalX >= AppConfig::kMatrixWidth || logicalY >= AppConfig::kMatrixHeight) {
     return AppConfig::kLedCount;
   }
 
@@ -108,9 +147,9 @@ uint16_t LedMatrixController::toPhysicalIndex(uint8_t x, uint8_t y) const {
   //   row 1: right -> left
   //   row 2: left -> right
   // This is common for prebuilt WS2812B matrices.
-  if (y % 2 == 0) {
-    return y * AppConfig::kMatrixWidth + x;
+  if (logicalY % 2 == 0) {
+    return logicalY * AppConfig::kMatrixWidth + logicalX;
   }
 
-  return y * AppConfig::kMatrixWidth + (AppConfig::kMatrixWidth - 1 - x);
+  return logicalY * AppConfig::kMatrixWidth + (AppConfig::kMatrixWidth - 1 - logicalX);
 }
