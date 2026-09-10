@@ -14,6 +14,9 @@ const char* configuredWifiPassword() {
   return WIFI_PASSWORD;
 }
 
+const char* configuredAccessPointPassword() {
+  return AP_PASSWORD;
+}
 
 uint8_t kColorWaveSteps[8] = {0, 2, 4, 6, 7, 5, 3, 1};
 uint8_t kBreathingSteps[16] = {10, 18, 28, 42, 60, 84, 112, 150, 190, 150, 112, 84, 60, 42, 28, 18};
@@ -254,7 +257,10 @@ void TcpMatrixServer::startAccessPoint() {
   // AP mode is the fallback/control mode when no station credentials are built
   // in. It does not need reconnect handling because the ESP8266 is the AP.
   WiFi.mode(WIFI_AP);
-  WiFi.softAP(AppConfig::kAccessPointSsid);
+  // With a password the AP is WPA2; without one it is open, and the control
+  // protocol has no authentication of its own, so anyone in radio range would
+  // have full control of the panel.
+  WiFi.softAP(AppConfig::kAccessPointSsid, configuredAccessPointPassword());
 
   Serial.print("AP SSID: ");
   Serial.println(AppConfig::kAccessPointSsid);

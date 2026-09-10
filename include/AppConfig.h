@@ -20,6 +20,12 @@
 #define WIFI_PASSWORD ""
 #endif
 
+// Fallback-AP password. WPA2 requires at least 8 characters; the default here
+// is a placeholder that every build should override in creds.h. An open AP
+// would expose the unauthenticated control port to anyone in radio range.
+#ifndef AP_PASSWORD
+#define AP_PASSWORD "matrix-setup"
+#endif
 
 namespace AppConfig {
 
