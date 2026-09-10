@@ -87,7 +87,7 @@ class TcpMatrixServer {
   void stopEffects();
   void startEffect(EffectMode mode, uint16_t intervalMs, uint8_t red, uint8_t green, uint8_t blue);
   bool applyCustomFrame(uint8_t frameIndex, uint8_t frameCount, uint16_t delayMs,
-                       const uint8_t* frameData);
+                        const uint8_t* frameData);
   void renderEffectFrame(uint32_t nowMs);
   void renderStatic(uint32_t nowMs);
   void renderChase(uint32_t nowMs);

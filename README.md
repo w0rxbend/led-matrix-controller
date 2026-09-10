@@ -88,6 +88,7 @@ PSU GND             ->  WS2812B GND
 include/
   AppConfig.h              hardware/network constants and local creds include
   LedMatrixController.h    matrix API and stored frame model
+  MatrixLayout.h           serpentine wiring geometry (pure, host-testable)
   MatrixProtocol.h         binary TCP protocol constants
   TcpMatrixServer.h        Wi-Fi, TCP server, parser, dispatch interface
 
@@ -96,6 +97,10 @@ src/
   LedMatrixController.cpp  NeoPixel rendering and matrix mapping
   MatrixProtocol.cpp       checksum helper
   TcpMatrixServer.cpp      Wi-Fi retry, TCP server, packet handling
+
+test/
+  stubs/Arduino.h          minimal Arduino surface for host builds
+  test_protocol/           host unit tests: checksum, frame sizes, layout
 
 docs/
   logo.svg                 README banner
@@ -226,6 +231,20 @@ E3          XOR checksum
 
 ## 🧪 Development
 
+### Unit Tests
+
+The protocol checksum and the serpentine layout mapping are pure functions, so
+they are tested on the host — no board required:
+
+```bash
+pio test -e native
+```
+
+These cover every frame in [`CLIENT_PROTOCOL.md`](CLIENT_PROTOCOL.md)'s **Test
+Frames** section byte-for-byte, so the document cannot drift from the firmware,
+and they assert that the serpentine mapping addresses all 64 LEDs exactly once.
+A mistake in either is invisible on a desk until the panel draws the wrong thing.
+
 ### Format
 
 ```bash
@@ -238,13 +257,22 @@ clang-format -i include/*.h src/*.cpp
 pio check
 ```
 
+### Build
+
+```bash
+pio run -e nodemcuv2
+```
+
 ### Full Local Verification
 
 ```bash
 clang-format -i include/*.h src/*.cpp
-pio run
-pio check
+pio test -e native
+pio run -e nodemcuv2
+pio check -e nodemcuv2 --fail-on-defect high
 ```
+
+CI runs exactly these three gates on every pull request.
 
 ---
 

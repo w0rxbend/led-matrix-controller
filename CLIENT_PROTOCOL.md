@@ -562,6 +562,9 @@ client sockets should be treated as disposable.
 
 ## Test Frames
 
+Every frame below is asserted byte-for-byte by the firmware's host tests
+(`test/test_protocol`), so these examples cannot drift from the implementation.
+
 Ping:
 
 ```text
@@ -577,23 +580,23 @@ Clear:
 Brightness 20:
 
 ```text
-4C 4D 01 02 01 14 15
+4C 4D 01 02 01 14 17
 ```
 
 Fill red:
 
 ```text
-4C 4D 01 03 03 FF 00 00 E3
+4C 4D 01 03 03 FF 00 00 FF
 ```
 
 Panel off:
 
 ```text
-4C 4D 01 06 01 00 01
+4C 4D 01 06 01 00 07
 ```
 
 Panel on:
 
 ```text
-4C 4D 01 06 01 01 00
+4C 4D 01 06 01 01 06
 ```

@@ -4,3 +4,16 @@
 .vscode/launch.json
 .vscode/ipch
 include/creds.h
+
+# Python bytecode from tools/ and examples/. These were tracked, so the ignore
+# rules above never applied to them — untracked in the same commit that adds this.
+__pycache__/
+*.pyc
+
+# Host test build output
+.pio/
+
+# Machine-generated orchestrator output. Kept in history as a development record,
+# but it should not keep being recommitted.
+AGENT_LOG.md
+SCORES.jsonl

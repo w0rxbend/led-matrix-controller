@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  test:
+    name: Host tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pip
+          key: pio-native-${{ hashFiles('platformio.ini') }}
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      # The protocol checksum and the serpentine layout mapping need no board, so
+      # they gate every pull request. A regression in either is invisible on a
+      # desk until the panel draws the wrong thing.
+      - name: Run host unit tests
+        run: pio test -e native
+
+  build:
+    name: Firmware build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            ~/.cache/pip
+          key: pio-nodemcuv2-${{ hashFiles('platformio.ini') }}
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      # creds.h is gitignored because it holds Wi-Fi credentials. The example
+      # provides the same symbols so the firmware links in CI.
+      - name: Provide placeholder credentials
+        run: cp include/creds.example.h include/creds.h
+
+      - name: Build firmware
+        run: pio run -e nodemcuv2
+
+      - name: Upload firmware binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-nodemcuv2
+          path: .pio/build/nodemcuv2/firmware.bin
+          if-no-files-found: error
+
+  lint:
+    name: Static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      - name: Provide placeholder credentials
+        run: cp include/creds.example.h include/creds.h
+
+      - name: cppcheck
+        run: pio check -e nodemcuv2 --fail-on-defect high

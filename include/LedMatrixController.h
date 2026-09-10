@@ -4,6 +4,7 @@
 #include <Arduino.h>
 
 #include "AppConfig.h"
+#include "MatrixLayout.h"
 
 // High-level wrapper around Adafruit_NeoPixel.
 //

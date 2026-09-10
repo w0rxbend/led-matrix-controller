@@ -98,19 +98,7 @@ void LedMatrixController::render() {
 }
 
 uint16_t LedMatrixController::toPhysicalIndex(uint8_t x, uint8_t y) const {
-  // Returning an out-of-range index lets callers use one simple validity check.
-  if (x >= AppConfig::kMatrixWidth || y >= AppConfig::kMatrixHeight) {
-    return AppConfig::kLedCount;
-  }
-
-  // The 8x8 panel is wired in serpentine rows:
-  //   row 0: left -> right
-  //   row 1: right -> left
-  //   row 2: left -> right
-  // This is common for prebuilt WS2812B matrices.
-  if (y % 2 == 0) {
-    return y * AppConfig::kMatrixWidth + x;
-  }
-
-  return y * AppConfig::kMatrixWidth + (AppConfig::kMatrixWidth - 1 - x);
+  // The wiring geometry lives in MatrixLayout so it can be unit tested on the
+  // host; this stays a thin delegation so there is only one copy of the mapping.
+  return MatrixLayout::toPhysicalIndex(x, y);
 }

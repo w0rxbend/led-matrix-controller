@@ -15,8 +15,7 @@ const char* configuredWifiPassword() {
 }
 
 uint8_t kColorWaveSteps[8] = {0, 2, 4, 6, 7, 5, 3, 1};
-uint8_t kBreathingSteps[16] = {10, 18, 28, 42, 60, 84, 112, 150,
-                               190, 150, 112, 84, 60, 42, 28, 18};
+uint8_t kBreathingSteps[16] = {10, 18, 28, 42, 60, 84, 112, 150, 190, 150, 112, 84, 60, 42, 28, 18};
 uint8_t kHeartbeatSteps[12] = {0, 180, 255, 70, 0, 0, 120, 210, 55, 0, 0, 0};
 
 uint16_t clampDelayMs(uint16_t delayMs) {
@@ -55,7 +54,8 @@ const char* commandName(uint8_t command) {
   }
 }
 
-void logInstruction(uint8_t command, uint8_t payloadLength, const IPAddress& remoteIp, uint16_t remotePort) {
+void logInstruction(uint8_t command, uint8_t payloadLength, const IPAddress& remoteIp,
+                    uint16_t remotePort) {
   Serial.print("Instruction: ");
   Serial.print(commandName(command));
   Serial.print(" (0x");
@@ -104,7 +104,8 @@ void setFramePixel(uint8_t* frame, uint8_t x, uint8_t y, uint8_t red, uint8_t gr
 }
 
 bool perimeterToPoint(uint8_t perimeterIndex, uint8_t& x, uint8_t& y) {
-  constexpr uint8_t perimeterLength = (AppConfig::kMatrixWidth * 2) + (AppConfig::kMatrixHeight * 2) - 4;
+  constexpr uint8_t perimeterLength =
+      (AppConfig::kMatrixWidth * 2) + (AppConfig::kMatrixHeight * 2) - 4;
   perimeterIndex %= perimeterLength;
 
   if (perimeterIndex < AppConfig::kMatrixWidth) {
@@ -544,7 +545,7 @@ MatrixProtocol::Status TcpMatrixServer::applyCommand(uint8_t command, const uint
       }
       stopEffects();
       return matrix_.setPhysicalFrame(payload, length) ? MatrixProtocol::Status::kOk
-                                                      : MatrixProtocol::Status::kInvalidLength;
+                                                       : MatrixProtocol::Status::kInvalidLength;
 
     case MatrixProtocol::Command::kSetStaticColor:
       // Direct control of static color. The firmware keeps showing the color.
@@ -567,7 +568,8 @@ MatrixProtocol::Status TcpMatrixServer::applyCommand(uint8_t command, const uint
         return MatrixProtocol::Status::kOk;
       }
 
-      const uint16_t intervalMs = clampDelayMs(static_cast<uint16_t>(payload[1] | (payload[2] << 8)));
+      const uint16_t intervalMs =
+          clampDelayMs(static_cast<uint16_t>(payload[1] | (payload[2] << 8)));
       const uint8_t r = payload[3];
       const uint8_t g = payload[4];
       const uint8_t b = payload[5];
@@ -692,7 +694,7 @@ void TcpMatrixServer::stopEffects() {
 }
 
 void TcpMatrixServer::startEffect(EffectMode mode, uint16_t intervalMs, uint8_t red, uint8_t green,
-                                 uint8_t blue) {
+                                  uint8_t blue) {
   effectMode_ = mode;
   effectIntervalMs_ = intervalMs;
   effectColorRed_ = red;
@@ -706,7 +708,7 @@ void TcpMatrixServer::startEffect(EffectMode mode, uint16_t intervalMs, uint8_t 
 }
 
 bool TcpMatrixServer::applyCustomFrame(uint8_t frameIndex, uint8_t frameCount, uint16_t delayMs,
-                                      const uint8_t* frameData) {
+                                       const uint8_t* frameData) {
   if (frameCount == 0 || frameCount > AppConfig::kMaxCustomFrames) {
     return false;
   }
@@ -896,10 +898,8 @@ void TcpMatrixServer::renderWave(uint32_t /*nowMs*/) {
       const uint8_t wave = kColorWaveSteps[(x + effectPhase_ + y) % 8];
       const uint16_t base = static_cast<uint16_t>(logicalToPhysical(x, y)) * 3;
       frame[base] = static_cast<uint8_t>((static_cast<uint16_t>(effectColorRed_) * wave) / 7);
-      frame[base + 1] =
-          static_cast<uint8_t>((static_cast<uint16_t>(effectColorGreen_) * wave) / 7);
-      frame[base + 2] =
-          static_cast<uint8_t>((static_cast<uint16_t>(effectColorBlue_) * wave) / 7);
+      frame[base + 1] = static_cast<uint8_t>((static_cast<uint16_t>(effectColorGreen_) * wave) / 7);
+      frame[base + 2] = static_cast<uint8_t>((static_cast<uint16_t>(effectColorBlue_) * wave) / 7);
     }
   }
 
@@ -911,7 +911,8 @@ void TcpMatrixServer::renderRain(uint32_t /*nowMs*/) {
   for (uint8_t x = 0; x < AppConfig::kMatrixWidth; ++x) {
     const uint8_t spawn = static_cast<uint8_t>(xorshift32(effectSeed_) % 100);
     if (spawn < 20) {
-      const uint8_t dropY = static_cast<uint8_t>(xorshift32(effectSeed_) % AppConfig::kMatrixHeight);
+      const uint8_t dropY =
+          static_cast<uint8_t>(xorshift32(effectSeed_) % AppConfig::kMatrixHeight);
       const uint8_t base = static_cast<uint16_t>(logicalToPhysical(x, dropY)) * 3;
       frame[base] = effectColorRed_;
       frame[base + 1] = effectColorGreen_;
@@ -942,12 +943,10 @@ void TcpMatrixServer::renderMeteor(uint32_t /*nowMs*/) {
 
     const uint16_t base = static_cast<uint16_t>(physicalIndex) * 3;
     const uint16_t scale = static_cast<uint16_t>(tailLength - tail) * 192 / tailLength;
-    frame[base] =
-        static_cast<uint8_t>((static_cast<uint16_t>(effectColorRed_) * scale) / 192);
+    frame[base] = static_cast<uint8_t>((static_cast<uint16_t>(effectColorRed_) * scale) / 192);
     frame[base + 1] =
         static_cast<uint8_t>((static_cast<uint16_t>(effectColorGreen_) * scale) / 192);
-    frame[base + 2] =
-        static_cast<uint8_t>((static_cast<uint16_t>(effectColorBlue_) * scale) / 192);
+    frame[base + 2] = static_cast<uint8_t>((static_cast<uint16_t>(effectColorBlue_) * scale) / 192);
   }
 
   matrix_.setPhysicalFrame(frame, sizeof(frame));
@@ -1034,7 +1033,8 @@ void TcpMatrixServer::renderMatrixRain(uint32_t /*nowMs*/) {
   uint8_t frame[AppConfig::kLedCount * 3] = {};
 
   for (uint8_t x = 0; x < AppConfig::kMatrixWidth; ++x) {
-    const uint8_t head = static_cast<uint8_t>((effectPhase_ + x * 3) % (AppConfig::kMatrixHeight + 4));
+    const uint8_t head =
+        static_cast<uint8_t>((effectPhase_ + x * 3) % (AppConfig::kMatrixHeight + 4));
     for (uint8_t y = 0; y < AppConfig::kMatrixHeight; ++y) {
       if (head < y || head - y > 3) {
         continue;
@@ -1112,7 +1112,8 @@ void TcpMatrixServer::renderComet(uint32_t /*nowMs*/) {
   const uint8_t head = effectPhase_ % AppConfig::kLedCount;
 
   for (uint8_t tail = 0; tail < tailLength; ++tail) {
-    const uint8_t ledIndex = static_cast<uint8_t>((head + AppConfig::kLedCount - tail) % AppConfig::kLedCount);
+    const uint8_t ledIndex =
+        static_cast<uint8_t>((head + AppConfig::kLedCount - tail) % AppConfig::kLedCount);
     const uint8_t scale = static_cast<uint8_t>(255 - (tail * 28));
     const uint16_t base = static_cast<uint16_t>(ledIndex) * 3;
     frame[base] = scaled(effectColorRed_, scale);
@@ -1162,7 +1163,8 @@ void TcpMatrixServer::renderDiagonal(uint32_t /*nowMs*/) {
 
 void TcpMatrixServer::renderBorderChase(uint32_t /*nowMs*/) {
   uint8_t frame[AppConfig::kLedCount * 3] = {};
-  constexpr uint8_t perimeterLength = (AppConfig::kMatrixWidth * 2) + (AppConfig::kMatrixHeight * 2) - 4;
+  constexpr uint8_t perimeterLength =
+      (AppConfig::kMatrixWidth * 2) + (AppConfig::kMatrixHeight * 2) - 4;
 
   for (uint8_t tail = 0; tail < 6; ++tail) {
     uint8_t x = 0;
@@ -1205,7 +1207,8 @@ void TcpMatrixServer::renderConfetti(uint32_t /*nowMs*/) {
     uint8_t red = 0;
     uint8_t green = 0;
     uint8_t blue = 0;
-    wheelColor(static_cast<uint8_t>(effectPhase_ * 11 + ledIndex * 17 + dot * 23), red, green, blue);
+    wheelColor(static_cast<uint8_t>(effectPhase_ * 11 + ledIndex * 17 + dot * 23), red, green,
+               blue);
     const uint16_t base = static_cast<uint16_t>(ledIndex) * 3;
     frame[base] = red;
     frame[base + 1] = green;
@@ -1221,15 +1224,14 @@ void TcpMatrixServer::renderCustom(uint32_t nowMs) {
   }
 
   const uint16_t delayMs = customFrameDelayMs_[customCurrentFrame_] == 0
-                              ? AppConfig::kDefaultPresetIntervalMs
-                              : customFrameDelayMs_[customCurrentFrame_];
+                               ? AppConfig::kDefaultPresetIntervalMs
+                               : customFrameDelayMs_[customCurrentFrame_];
   if (nowMs - lastEffectStepMs_ < delayMs) {
     return;
   }
 
   lastEffectStepMs_ = nowMs;
-  matrix_.setPhysicalFrame(customFrameBuffer_[customCurrentFrame_],
-                          AppConfig::kLedCount * 3);
+  matrix_.setPhysicalFrame(customFrameBuffer_[customCurrentFrame_], AppConfig::kLedCount * 3);
   customCurrentFrame_ = (customCurrentFrame_ + 1) % customFrameExpectedCount_;
 }
 
