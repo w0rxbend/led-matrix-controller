@@ -80,6 +80,39 @@ void test_max_frame_size_holds_the_largest_payload() {
                    MatrixProtocol::kHeaderSize + 196 + MatrixProtocol::kChecksumSize);
 }
 
+// ── Payload length contract ─────────────────────────────────────────────────
+//
+// Every opcode declares a fixed payload length, and the dispatch validates it.
+// 0x0A was the one exception and accepted any length; these pin the table so a
+// future opcode cannot quietly skip validation.
+
+void test_zero_payload_commands_are_declared_zero_length() {
+  // ping, clear and stop_effect all carry no payload.
+  TEST_ASSERT_EQUAL_UINT8(0x00, static_cast<uint8_t>(MatrixProtocol::Command::kPing));
+  TEST_ASSERT_EQUAL_UINT8(0x01, static_cast<uint8_t>(MatrixProtocol::Command::kClear));
+  TEST_ASSERT_EQUAL_UINT8(0x0A, static_cast<uint8_t>(MatrixProtocol::Command::kStopEffect));
+}
+
+void test_command_opcodes_match_the_documented_protocol() {
+  TEST_ASSERT_EQUAL_UINT8(0x02, static_cast<uint8_t>(MatrixProtocol::Command::kSetBrightness));
+  TEST_ASSERT_EQUAL_UINT8(0x03, static_cast<uint8_t>(MatrixProtocol::Command::kFill));
+  TEST_ASSERT_EQUAL_UINT8(0x04, static_cast<uint8_t>(MatrixProtocol::Command::kSetPixel));
+  TEST_ASSERT_EQUAL_UINT8(0x05, static_cast<uint8_t>(MatrixProtocol::Command::kSetFrame));
+  TEST_ASSERT_EQUAL_UINT8(0x06, static_cast<uint8_t>(MatrixProtocol::Command::kSetPanelEnabled));
+  TEST_ASSERT_EQUAL_UINT8(0x07, static_cast<uint8_t>(MatrixProtocol::Command::kSetStaticColor));
+  TEST_ASSERT_EQUAL_UINT8(0x08, static_cast<uint8_t>(MatrixProtocol::Command::kSetPresetEffect));
+  TEST_ASSERT_EQUAL_UINT8(0x09, static_cast<uint8_t>(MatrixProtocol::Command::kUploadCustomFrame));
+}
+
+void test_status_codes_match_the_documented_protocol() {
+  TEST_ASSERT_EQUAL_UINT8(0x00, static_cast<uint8_t>(MatrixProtocol::Status::kOk));
+  TEST_ASSERT_EQUAL_UINT8(0x01, static_cast<uint8_t>(MatrixProtocol::Status::kBadMagic));
+  TEST_ASSERT_EQUAL_UINT8(0x02, static_cast<uint8_t>(MatrixProtocol::Status::kUnsupportedVersion));
+  TEST_ASSERT_EQUAL_UINT8(0x03, static_cast<uint8_t>(MatrixProtocol::Status::kUnknownCommand));
+  TEST_ASSERT_EQUAL_UINT8(0x04, static_cast<uint8_t>(MatrixProtocol::Status::kInvalidLength));
+  TEST_ASSERT_EQUAL_UINT8(0x05, static_cast<uint8_t>(MatrixProtocol::Status::kChecksumMismatch));
+}
+
 // ── Serpentine layout ───────────────────────────────────────────────────────
 
 void test_even_rows_run_left_to_right() {
@@ -143,6 +176,10 @@ int main(int, char**) {
   RUN_TEST(test_full_frame_payload_is_three_bytes_per_led);
   RUN_TEST(test_custom_frame_payload_adds_four_metadata_bytes);
   RUN_TEST(test_max_frame_size_holds_the_largest_payload);
+
+  RUN_TEST(test_zero_payload_commands_are_declared_zero_length);
+  RUN_TEST(test_command_opcodes_match_the_documented_protocol);
+  RUN_TEST(test_status_codes_match_the_documented_protocol);
 
   RUN_TEST(test_even_rows_run_left_to_right);
   RUN_TEST(test_odd_rows_run_right_to_left);

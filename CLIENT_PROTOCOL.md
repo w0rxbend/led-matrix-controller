@@ -148,7 +148,12 @@ Payload length: `0`
 Payload: empty
 
 Use this when you want to forget the current image. If you only want to hide the
-panel temporarily, use `set panel enabled` with `0`.
+panel while keeping the image, use `set panel enabled` with `0`.
+
+Note for clients driven by the `echo` proxy: a `clear` marks the proxy's desired
+background dirty, so when a background is configured the proxy repaints it almost
+immediately and the dark panel lasts milliseconds. `set panel enabled 0` is the one
+dark state the proxy's idle convergence leaves alone.
 
 ### `0x02`: Set Brightness
 
@@ -303,31 +308,47 @@ Payload:
 effect_id interval_lsb interval_msb r g b
 ```
 
-`effect_id` values:
+`effect_id` values. Ids are stable and are never renumbered, because configs and
+clients pin them.
 
-- `1` chase
-- `2` color_wipe
-- `3` blink
-- `4` wave
-- `5` rain
-- `6` meteor
-- `7` rainbow
-- `8` breathing
-- `9` scanner
-- `10` sparkle
-- `11` fire
-- `12` matrix_rain
-- `13` ripple
-- `14` theater_chase
-- `15` twinkle
-- `16` comet
-- `17` plasma
-- `18` diagonal
-- `19` border_chase
-- `20` heartbeat
-- `21` pulse_wipe
-- `22` confetti
-- `0` stop effect and return to direct mode
+| id | name | notes |
+|---:|---|---|
+| `0` | stop effect | Halts the effect engine and returns to direct mode. It does **not** clear the panel: the frame buffer is untouched, so the last effect frame stays lit. Use `clear` (`0x01`) to go dark. |
+| `2` | color_wipe | |
+| `3` | blink | |
+| `7` | rainbow | **ignores the colour payload** — computes its own hues |
+| `8` | breathing | |
+| `9` | scanner | |
+| `11` | fire | **ignores the colour payload** — hardcoded heat palette |
+| `12` | matrix_rain | honours the colour, despite the name |
+| `13` | ripple | |
+| `14` | theater_chase | |
+| `15` | twinkle | |
+| `16` | comet | |
+| `17` | plasma | **ignores the colour payload** |
+| `18` | diagonal | |
+| `19` | border_chase | |
+| `20` | heartbeat | |
+| `22` | confetti | **ignores the colour payload** — derives a hue per dot |
+
+Four effects accept the 3-byte RGB payload and discard it. The device still answers
+`0x00` OK, so a client cannot detect this from the response — it is listed here
+because `fill colour = black` works for some effects and not others.
+
+### Retired effect ids
+
+These ids still work, and are kept so existing configs keep loading, but they are
+parameter variants of an effect above rather than distinct looks. Prefer the
+replacement:
+
+| id | name | why | use instead |
+|---:|---|---|---|
+| `1` | chase | same head position as comet, zero-length tail | `16` comet |
+| `6` | meteor | same head position as comet, 4-pixel tail | `16` comet |
+| `4` | wave | same `f(x+y+phase)` geometry as diagonal, softer ramp that compresses to nothing at low brightness | `18` diagonal |
+| `5` | rain | does not actually fall — there is no per-drop vertical state, so it is sparse random scatter | `15` twinkle |
+| `10` | sparkle | the same random scatter with a different dot count | `15` twinkle |
+| `21` | pulse_wipe | `color_wipe` multiplied by the breathing envelope, driven by the same phase | `2` color_wipe |
 
 The interval controls frame timing in milliseconds. `0` is treated as `140ms`.
 
@@ -349,9 +370,15 @@ The device starts looping as soon as all frames are uploaded.
 
 ### `0x0A`: Stop Effect
 
-Stops running preset/custom animation and returns to direct mode.
+Stops a running preset/custom animation and returns to direct mode. This is the
+same operation as `0x08` with `effect_id` `0`; clients generally use the latter,
+since it is the one the proxy and CLI expose.
 
-Payload length: `0`
+It does **not** clear the panel. `stopEffects()` leaves `frameRgb_` untouched and
+does not call `render()`, so whatever the last effect tick drew stays lit. Send
+`0x01` clear if you want the panel dark.
+
+Payload length: `0` (a non-zero length is rejected with status `0x04`)
 
 ## Building Frames
 

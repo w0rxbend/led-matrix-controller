@@ -666,6 +666,13 @@ MatrixProtocol::Status TcpMatrixServer::applyCommand(uint8_t command, const uint
     }
 
     case MatrixProtocol::Command::kStopEffect:
+      // Every sibling opcode validates its payload length; this one did not.
+      if (length != 0) {
+        return MatrixProtocol::Status::kInvalidLength;
+      }
+      // Note: this halts the effect engine but deliberately does NOT touch
+      // frameRgb_ or call render(), so the panel keeps whatever the last effect
+      // tick drew. Use kClear to actually go dark.
       stopEffects();
       return MatrixProtocol::Status::kOk;
 
