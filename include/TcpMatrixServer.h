@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 
+#include "FrameParser.h"
 #include "LedMatrixController.h"
 #include "MatrixProtocol.h"
 
@@ -69,11 +70,9 @@ class TcpMatrixServer {
   void restartServer();
   void acceptClientIfNeeded();
   void readClientBytes();
+  void dropIdleClient();
 
-  // Streaming parser helpers. TCP is a byte stream, so a complete protocol
-  // frame may arrive split across several loop() iterations.
-  void resetParser();
-  void parseByte(uint8_t value);
+  // Acts on a frame the parser has already validated.
   void processFrame();
 
   // Converts a validated protocol frame into LED operations.
@@ -122,16 +121,16 @@ class TcpMatrixServer {
   WiFiServer server_;
   WiFiClient client_;
 
-  // Parser state for one in-progress command frame.
-  uint8_t frameBuffer_[MatrixProtocol::kMaxFrameSize];
-  uint16_t frameIndex_;
-  uint16_t expectedFrameSize_;
+  // Parser for the in-progress command frame. TCP is a byte stream, so a frame
+  // may arrive split across several loop() iterations.
+  FrameParser parser_;
 
   // Retry/health state. millis() timestamps avoid blocking delay loops after
   // setup, which keeps the device responsive.
   bool serverStarted_;
   uint32_t lastWifiRetryMs_;
   uint32_t lastServerHealthCheckMs_;
+  uint32_t lastClientActivityMs_;
 
   // Non-blocking animation state.
   EffectMode effectMode_;

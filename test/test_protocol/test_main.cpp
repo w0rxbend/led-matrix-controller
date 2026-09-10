@@ -10,6 +10,8 @@
 #include "MatrixLayout.h"
 #include "MatrixProtocol.h"
 
+#include "test_frame_parser.h"
+
 // ── Checksum ────────────────────────────────────────────────────────────────
 
 void test_checksum_of_empty_payload_is_zero() {
@@ -186,6 +188,22 @@ int main(int, char**) {
   RUN_TEST(test_corners_map_to_expected_chain_positions);
   RUN_TEST(test_every_coordinate_maps_to_a_unique_index);
   RUN_TEST(test_out_of_range_coordinates_are_rejected);
+
+  RUN_TEST(test_parser_accepts_the_documented_ping_frame);
+  RUN_TEST(test_parser_exposes_the_payload_of_a_fill_frame);
+  RUN_TEST(test_parser_accepts_two_frames_back_to_back);
+  RUN_TEST(test_parser_holds_state_across_a_split_frame);
+  RUN_TEST(test_parser_accepts_the_largest_frame_a_length_byte_can_describe);
+  RUN_TEST(test_parser_rejects_bad_magic);
+  RUN_TEST(test_parser_rejects_a_wrong_second_magic_byte);
+  RUN_TEST(test_parser_rejects_an_unsupported_version);
+  RUN_TEST(test_parser_rejects_a_bad_checksum);
+  RUN_TEST(test_parser_never_reports_a_truncated_frame_as_ready);
+  RUN_TEST(test_stray_bytes_draw_exactly_one_reply);
+  RUN_TEST(test_a_long_garbage_stream_still_draws_one_reply);
+  RUN_TEST(test_the_parser_recovers_on_the_next_valid_frame);
+  RUN_TEST(test_a_failed_frame_does_not_poison_the_next_one);
+  RUN_TEST(test_reset_discards_a_partial_frame);
 
   return UNITY_END();
 }

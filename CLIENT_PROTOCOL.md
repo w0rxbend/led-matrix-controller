@@ -25,6 +25,13 @@ The firmware is designed for one active client at a time. A client should keep
 the socket open while it is actively controlling the matrix and reconnect if the
 socket closes.
 
+Because there is only one slot, the firmware drops a client that has sent
+nothing for 60 seconds, so a peer that goes away without closing its socket
+cannot hold the panel hostage until the next power cycle. A client that wants to
+stay connected while idle should send a `ping` well inside that window; that is
+what the proxy's heartbeat does. Being dropped is not an error condition --
+reconnect and carry on.
+
 ## Transport Rules
 
 - TCP is a byte stream, not a packet stream.
@@ -34,6 +41,11 @@ socket closes.
   bytes.
 - Do not rely on newline characters or text delimiters. There are none.
 - Disable client-side buffering delays where possible for real-time animation.
+- After a framing error the firmware replies once and then discards bytes
+  silently until it sees `0x4C` starting a new frame. Do not expect one status
+  frame per stray byte: a client that has lost sync gets a single
+  `kBadMagic` (or `kUnsupportedVersion` / `kChecksumMismatch`) and should
+  resynchronise by sending a complete, well-formed frame.
 
 Recommended client behavior:
 

@@ -20,6 +20,7 @@
 #define WIFI_PASSWORD ""
 #endif
 
+
 namespace AppConfig {
 
 // Hardware layout for the current ESP8266 + WS2812B 8x8 build.
@@ -42,6 +43,18 @@ constexpr char kAccessPointSsid[] = "led-matrix";
 constexpr uint32_t kStationConnectTimeoutMs = 15000;
 constexpr uint32_t kWifiRetryIntervalMs = 10000;
 constexpr uint32_t kServerHealthCheckIntervalMs = 5000;
+
+// The firmware serves one client at a time, so a client that stops talking --
+// or whose machine loses power, leaving a half-open socket this side still
+// calls connected() -- would hold the only slot until a power cycle. Comfortably
+// longer than the proxy's heartbeat so an idle but healthy link is never cut.
+constexpr uint32_t kClientIdleTimeoutMs = 60000;
+
+// Ceiling on bytes drained from the socket per loop() pass. Without one, a
+// client that keeps the receive buffer full holds loop() long enough for the
+// software watchdog (~3.2s) to reset the board, and animations stop updating
+// meanwhile. Whatever is left waits for the next pass.
+constexpr uint16_t kMaxBytesPerLoop = 512;
 constexpr uint8_t kMaxCustomFrames = 8;
 constexpr uint16_t kDefaultPresetIntervalMs = 140;
 constexpr uint16_t kMinEffectFrameDelayMs = 20;

@@ -14,6 +14,7 @@ const char* configuredWifiPassword() {
   return WIFI_PASSWORD;
 }
 
+
 uint8_t kColorWaveSteps[8] = {0, 2, 4, 6, 7, 5, 3, 1};
 uint8_t kBreathingSteps[16] = {10, 18, 28, 42, 60, 84, 112, 150, 190, 150, 112, 84, 60, 42, 28, 18};
 uint8_t kHeartbeatSteps[12] = {0, 180, 255, 70, 0, 0, 120, 210, 55, 0, 0, 0};
@@ -162,14 +163,10 @@ void wheelColor(uint8_t position, uint8_t& red, uint8_t& green, uint8_t& blue) {
 TcpMatrixServer::TcpMatrixServer(LedMatrixController& matrix)
     : matrix_(matrix),
       server_(AppConfig::kTcpPort),
-      // Zeroing the frame buffer is not required for correctness, but it makes
-      // startup state explicit and keeps static analysis happy.
-      frameBuffer_(),
-      frameIndex_(0),
-      expectedFrameSize_(0),
       serverStarted_(false),
       lastWifiRetryMs_(0),
       lastServerHealthCheckMs_(0),
+      lastClientActivityMs_(0),
       effectMode_(EffectMode::kDirect),
       effectIntervalMs_(AppConfig::kDefaultPresetIntervalMs),
       lastEffectStepMs_(0),
@@ -198,9 +195,11 @@ void TcpMatrixServer::loop() {
   // Order matters:
   // 1. Repair Wi-Fi first.
   // 2. Ensure the TCP listener matches the current network state.
-  // 3. Accept/read client data only when the listener is valid.
+  // 3. Release the client slot if its occupant has gone quiet.
+  // 4. Accept/read client data only when the listener is valid.
   handleWifiReconnect();
   ensureServerRunning();
+  dropIdleClient();
   acceptClientIfNeeded();
   readClientBytes();
   updateAnimations();
@@ -370,7 +369,7 @@ void TcpMatrixServer::stopServer() {
 
   server_.stop();
   serverStarted_ = false;
-  resetParser();
+  parser_.reset();
   Serial.println("TCP server stopped");
 }
 
@@ -401,7 +400,9 @@ void TcpMatrixServer::acceptClientIfNeeded() {
 
   client_ = newClient;
   client_.setNoDelay(true);
-  resetParser();
+  client_.keepAlive();
+  parser_.reset();
+  lastClientActivityMs_ = millis();
   Serial.println("TCP client connected");
 }
 
@@ -411,84 +412,54 @@ void TcpMatrixServer::readClientBytes() {
     return;
   }
 
-  // Consume every currently buffered byte. parseByte() keeps frame state across
-  // calls, so partial frames are fine.
-  while (client_.available() > 0) {
-    parseByte(static_cast<uint8_t>(client_.read()));
-  }
-}
+  // Bounded so a client that keeps the receive buffer full cannot hold loop()
+  // past the software watchdog, or starve updateAnimations(). The parser keeps
+  // frame state across calls, so a partial frame simply resumes next pass.
+  uint16_t budget = AppConfig::kMaxBytesPerLoop;
+  while (budget > 0 && client_.available() > 0) {
+    budget--;
+    lastClientActivityMs_ = millis();
 
-void TcpMatrixServer::resetParser() {
-  // The buffer contents do not need clearing; frameIndex_ defines which bytes
-  // are valid. Resetting only counters is faster and simpler.
-  frameIndex_ = 0;
-  expectedFrameSize_ = 0;
-}
-
-void TcpMatrixServer::parseByte(uint8_t value) {
-  // Validate the fixed header as early as possible. That lets us recover quickly
-  // from clients connecting mid-stream or sending text by mistake.
-  if (frameIndex_ == 0 && value != MatrixProtocol::kMagic0) {
-    sendStatus(MatrixProtocol::Status::kBadMagic);
-    return;
-  }
-
-  if (frameIndex_ == 1 && value != MatrixProtocol::kMagic1) {
-    sendStatus(MatrixProtocol::Status::kBadMagic);
-    resetParser();
-    return;
-  }
-
-  if (frameIndex_ == 2 && value != MatrixProtocol::kVersion) {
-    sendStatus(MatrixProtocol::Status::kUnsupportedVersion);
-    resetParser();
-    return;
-  }
-
-  frameBuffer_[frameIndex_] = value;
-  frameIndex_++;
-
-  // Once the 5-byte header has arrived we know the total frame size. The length
-  // byte is capped so the parser can never write past frameBuffer_.
-  if (frameIndex_ == MatrixProtocol::kHeaderSize) {
-    const uint8_t payloadLength = frameBuffer_[4];
-    if (payloadLength > MatrixProtocol::kMaxPayloadSize) {
-      sendStatus(MatrixProtocol::Status::kInvalidLength);
-      resetParser();
-      return;
+    const FrameParser::Result result = parser_.feed(static_cast<uint8_t>(client_.read()));
+    switch (result.action) {
+      case FrameParser::Action::kNeedMoreBytes:
+        break;
+      case FrameParser::Action::kSendStatus:
+        sendStatus(result.status);
+        break;
+      case FrameParser::Action::kFrameReady:
+        processFrame();
+        break;
     }
+  }
+}
 
-    expectedFrameSize_ =
-        MatrixProtocol::kHeaderSize + payloadLength + MatrixProtocol::kChecksumSize;
+void TcpMatrixServer::dropIdleClient() {
+  if (!client_ || !client_.connected()) {
+    return;
+  }
+  if (millis() - lastClientActivityMs_ < AppConfig::kClientIdleTimeoutMs) {
+    return;
   }
 
-  // A complete frame is parsed only after header + payload + checksum arrive.
-  if (expectedFrameSize_ > 0 && frameIndex_ == expectedFrameSize_) {
-    processFrame();
-  }
+  // One client at a time, so a silent occupant -- including a half-open socket
+  // left by a peer that lost power -- would otherwise keep the panel
+  // uncontrollable until a power cycle.
+  Serial.println("TCP client idle, dropping to free the slot");
+  client_.stop();
+  parser_.reset();
 }
 
 void TcpMatrixServer::processFrame() {
-  // Header validation already happened in parseByte(). Here we only verify the
-  // checksum and then dispatch the command.
-  const uint8_t payloadLength = frameBuffer_[4];
-  const uint8_t receivedChecksum = frameBuffer_[expectedFrameSize_ - 1];
-  const uint8_t expectedChecksum = MatrixProtocol::checksum(frameBuffer_, expectedFrameSize_ - 1);
-  const uint8_t command = frameBuffer_[3];
+  // The parser has already validated magic, version, length and checksum.
+  const uint8_t command = parser_.command();
+  const uint8_t payloadLength = parser_.payloadLength();
 
   if (client_) {
     logInstruction(command, payloadLength, client_.remoteIP(), client_.remotePort());
   }
 
-  if (expectedChecksum != receivedChecksum) {
-    sendStatus(MatrixProtocol::Status::kChecksumMismatch);
-    resetParser();
-    return;
-  }
-
-  const MatrixProtocol::Status status = applyCommand(command, &frameBuffer_[5], payloadLength);
-  sendStatus(status);
-  resetParser();
+  sendStatus(applyCommand(command, parser_.payload(), payloadLength));
 }
 
 MatrixProtocol::Status TcpMatrixServer::applyCommand(uint8_t command, const uint8_t* payload,
